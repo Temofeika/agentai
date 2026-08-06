@@ -8,6 +8,14 @@ from PyQt6.QtGui import QPixmap, QCursor, QFont, QColor
 from PyQt6.QtSvgWidgets import QSvgWidget
 from agent import Agent
 
+def resource_path(relative_path):
+    """Get absolute path to resource, works for dev and for PyInstaller"""
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
 class AgentThread(QThread):
     update_signal = pyqtSignal(str)
     finished_signal = pyqtSignal(str)
@@ -283,7 +291,7 @@ class DesktopPet(QMainWindow):
         layout = QVBoxLayout(self.central_widget)
         
         # Load the alpaca-hat SVG
-        self.svg_widget = QSvgWidget("alpaca-hat.svg")
+        self.svg_widget = QSvgWidget(resource_path("alpaca-hat.svg"))
         self.svg_widget.setFixedSize(150, 150)
         
         # Enable transparent background for SVG

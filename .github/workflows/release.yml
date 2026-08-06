@@ -31,17 +31,17 @@ jobs:
     - name: Build EXE with PyInstaller
       run: |
         pyinstaller --noconfirm --collect-all PyQt6 --onefile --windowed --add-data "alpaca-hat.svg;." main.py
-        
-    - name: Rename EXE
-      run: |
         mv dist/main.exe dist/AI-Agent.exe
+        pyinstaller --noconfirm --onefile --windowed --name AI-Agent-Setup --add-data "dist/AI-Agent.exe;." installer.py
 
     - name: Create Release
       id: create_release
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
       with:
-        files: dist/AI-Agent.exe
+        files: |
+          dist/AI-Agent.exe
+          dist/AI-Agent-Setup.exe
         tag_name: ${{ github.ref_name || 'latest' }}
         name: Release ${{ github.ref_name || 'latest' }}
       env:
