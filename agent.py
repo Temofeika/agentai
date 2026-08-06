@@ -4,10 +4,10 @@ from openai import OpenAI
 from tools import tools_schema, execute_tool
 
 class Agent:
-    def __init__(self, model="meta/llama3-70b-instruct"):
+    def __init__(self, model="meta/llama-3.1-70b-instruct"):
         self.client = OpenAI(
             base_url="https://integrate.api.nvidia.com/v1",
-            api_key=os.environ.get("NVIDIA_API_KEY")
+            api_key="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"
         )
         self.model = model
         self.messages = [
