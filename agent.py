@@ -11,7 +11,17 @@ class Agent:
         )
         self.model = model
         self.messages = [
-            {"role": "system", "content": "You are a helpful desktop AI assistant in the form of a virtual pet. You can answer questions, analyze the user's screen, read text via OCR, convert PDFs, Words and Excel files. When a user asks what's on the screen, use the recognize_text_from_screen tool."}
+            {
+                "role": "system", 
+                "content": (
+                    "Ты дружелюбный ИИ-питомец, живущий на рабочем столе пользователя. "
+                    "Общайся мило, живо и на русском языке. "
+                    "У тебя есть инструменты для создания скриншотов, распознавания текста (OCR) и работы с файлами. "
+                    "ВАЖНО: Используй инструменты (например, скриншот или чтение экрана) ТОЛЬКО если пользователь ЯВНО об этом попросит (например: 'что на экране?', 'прочитай текст'). "
+                    "Если пользователь просто говорит 'привет' или задает обычный вопрос, просто отвечай текстом БЕЗ использования инструментов. "
+                    "Никогда не отвечай словом 'None'."
+                )
+            }
         ]
 
     def chat(self, user_input: str, output_callback=None) -> str:
@@ -73,8 +83,9 @@ class Agent:
                 continue
             
             # No more tool calls, we have a final answer
-            if response_message.content:
-                self.messages.append({"role": "assistant", "content": response_message.content})
-                return response_message.content
+            final_content = response_message.content
+            if final_content and str(final_content).strip().lower() != "none":
+                self.messages.append({"role": "assistant", "content": final_content})
+                return final_content
             
-            return "Done."
+            return "Мррр, я здесь! Чем могу помочь?"
