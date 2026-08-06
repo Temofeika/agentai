@@ -10,6 +10,7 @@ import tempfile
 import pygetwindow as gw
 import pandas as pd
 import tempfile
+from duckduckgo_search import DDGS
 
 # Configure Tesseract path for Windows
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
@@ -130,6 +131,20 @@ def read_excel(excel_path: str) -> str:
         return f"Excel file {excel_path} has {len(df)} rows and {len(df.columns)} columns.\nColumns: {', '.join(df.columns.astype(str))}\nHead:\n{df.head(3).to_string()}"
     except Exception as e:
         return f"Error reading Excel: {e}"
+
+def search_web(query: str) -> str:
+    """Searches the web using DuckDuckGo and returns the top 3 results."""
+    try:
+        results = DDGS().text(query, max_results=3)
+        if not results:
+            return f"No results found for '{query}'."
+        
+        output = f"Top 3 Web Search Results for '{query}':\n\n"
+        for i, res in enumerate(results, 1):
+            output += f"{i}. {res.get('title')}\n{res.get('body')}\nURL: {res.get('href')}\n\n"
+        return output.strip()
+    except Exception as e:
+        return f"Error searching the web: {e}"
 
 # Tool definitions for the LLM
 tools_schema = [
@@ -259,6 +274,20 @@ tools_schema = [
                 "required": ["excel_path"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_web",
+            "description": "Searches the internet for current events, news, or factual information.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "The search query (e.g., 'news in Krasnoyarsk today')"}
+                },
+                "required": ["query"]
+            }
+        }
     }
 ]
 
@@ -281,5 +310,7 @@ def execute_tool(name: str, arguments: dict) -> str:
         return convert_word_to_pdf(arguments.get("docx_path"), arguments.get("pdf_path"))
     elif name == "read_excel":
         return read_excel(arguments.get("excel_path"))
+    elif name == "search_web":
+        return search_web(arguments.get("query"))
     else:
         return f"Error: Unknown tool '{name}'"
