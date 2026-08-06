@@ -1,0 +1,45 @@
+name: Build and Release EXE
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger on tags like v1.0, v2.0
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11' # Best compatibility
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+
+    - name: Build EXE with PyInstaller
+      run: |
+        pyinstaller --noconfirm --onefile --windowed --add-data "alpaca-hat.svg;." main.py
+        
+    - name: Rename EXE
+      run: |
+        mv dist/main.exe dist/AI-Agent.exe
+
+    - name: Create Release
+      id: create_release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+      with:
+        files: dist/AI-Agent.exe
+        tag_name: ${{ github.ref_name || 'latest' }}
+        name: Release ${{ github.ref_name || 'latest' }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

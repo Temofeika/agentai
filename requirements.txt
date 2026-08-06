@@ -1,0 +1,12 @@
+openai
+python-dotenv
+colorama
+PyQt6
+pyautogui
+Pillow
+pytesseract
+pdf2docx
+docx2pdf
+pandas
+openpyxl
+PyQt6-Svg
