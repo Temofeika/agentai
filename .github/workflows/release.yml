@@ -30,7 +30,7 @@ jobs:
 
     - name: Build EXE with PyInstaller
       run: |
-        pyinstaller --noconfirm --onefile --windowed --add-data "alpaca-hat.svg;." main.py
+        pyinstaller --noconfirm --collect-all PyQt6 --onefile --windowed --add-data "alpaca-hat.svg;." main.py
         
     - name: Rename EXE
       run: |
