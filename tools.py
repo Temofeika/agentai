@@ -7,6 +7,9 @@ from pdf2docx import Converter
 from docx2pdf import convert
 import pandas as pd
 import tempfile
+import pygetwindow as gw
+import pandas as pd
+import tempfile
 
 # Configure Tesseract path for Windows
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
@@ -55,25 +58,52 @@ def run_command(command: str) -> str:
     except Exception as e:
         return f"Error executing command: {e}"
 
-def capture_screen(save_path: str = "screenshot.png") -> str:
-    """Takes a screenshot of the current screen."""
+def get_window_bbox(window_title=None):
+    if not window_title:
+        return None
     try:
-        screenshot = pyautogui.screenshot()
+        windows = gw.getWindowsWithTitle(window_title)
+        if not windows:
+            return None
+        win = windows[0]
+        return (win.left, win.top, win.width, win.height)
+    except Exception:
+        return None
+
+def capture_screen(save_path: str = "screenshot.png", window_title: str = None) -> str:
+    """Takes a screenshot of the current screen or a specific window."""
+    try:
+        bbox = get_window_bbox(window_title)
+        if bbox:
+            screenshot = pyautogui.screenshot(region=bbox)
+        else:
+            screenshot = pyautogui.screenshot()
         screenshot.save(save_path)
         return f"Screenshot saved to {save_path}"
     except Exception as e:
         return f"Error capturing screen: {e}"
 
-def recognize_text_from_screen() -> str:
-    """Takes a screenshot and runs OCR to extract text from the screen."""
+def recognize_text_from_screen(window_title: str = None) -> str:
+    """Takes a screenshot and runs OCR to extract text from the screen or specific window."""
     try:
-        temp_img = tempfile.mktemp(suffix=".png")
-        pyautogui.screenshot(temp_img)
-        text = pytesseract.image_to_string(Image.open(temp_img), lang='eng+rus')
-        os.remove(temp_img)
+        bbox = get_window_bbox(window_title)
+        if bbox:
+            img = pyautogui.screenshot(region=bbox)
+        else:
+            img = pyautogui.screenshot()
+            
+        text = pytesseract.image_to_string(img, lang='eng+rus')
         return f"Extracted text from screen:\n{text}"
+    except pytesseract.TesseractNotFoundError:
+        return (
+            "ОШИБКА OCR: Программа Tesseract не установлена! "
+            "Пожалуйста, скажите пользователю следующее: "
+            "«Чтобы я мог читать текст с экрана, вам нужно установить программу Tesseract. "
+            "Скачайте её по ссылке: https://github.com/UB-Mannheim/tesseract/wiki и установите. "
+            "После этого я смогу читать всё, что вы мне покажете!»"
+        )
     except Exception as e:
-        return f"Error recognizing text: {e}. Note: Make sure Tesseract is installed."
+        return f"Error recognizing text: {e}"
 
 def convert_pdf_to_word(pdf_path: str, docx_path: str) -> str:
     """Converts a PDF file to a Word (docx) file."""
@@ -163,11 +193,12 @@ tools_schema = [
         "type": "function",
         "function": {
             "name": "capture_screen",
-            "description": "Takes a screenshot of the user's current screen and saves it.",
+            "description": "Takes a screenshot of the user's current screen or a specific window and saves it.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "save_path": {"type": "string"}
+                    "save_path": {"type": "string"},
+                    "window_title": {"type": "string", "description": "Optional title of the window to capture."}
                 }
             }
         }
@@ -179,7 +210,9 @@ tools_schema = [
             "description": "Takes a screenshot and extracts text from it using OCR. Useful for answering 'what is on my screen'.",
             "parameters": {
                 "type": "object",
-                "properties": {}
+                "properties": {
+                    "window_title": {"type": "string", "description": "Optional title of the window to extract text from."}
+                }
             }
         }
     },
@@ -239,9 +272,9 @@ def execute_tool(name: str, arguments: dict) -> str:
     elif name == "run_command":
         return run_command(arguments.get("command"))
     elif name == "capture_screen":
-        return capture_screen(arguments.get("save_path", "screenshot.png"))
+        return capture_screen(arguments.get("save_path", "screenshot.png"), arguments.get("window_title"))
     elif name == "recognize_text_from_screen":
-        return recognize_text_from_screen()
+        return recognize_text_from_screen(arguments.get("window_title"))
     elif name == "convert_pdf_to_word":
         return convert_pdf_to_word(arguments.get("pdf_path"), arguments.get("docx_path"))
     elif name == "convert_word_to_pdf":

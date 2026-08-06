@@ -9,4 +9,3 @@ pdf2docx
 docx2pdf
 pandas
 openpyxl
-PyQt6-Svg

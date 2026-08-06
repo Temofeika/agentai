@@ -24,13 +24,17 @@ class Agent:
             }
         ]
 
-    def chat(self, user_input: str, output_callback=None) -> str:
+    def chat(self, user_input: str, context: str = None, output_callback=None) -> str:
         """
         Sends a message to the LLM and handles tool calls.
         Calls output_callback(text) if provided, to stream updates to UI.
         Returns the final response string.
         """
-        self.messages.append({"role": "user", "content": user_input})
+        message_content = user_input
+        if context:
+            message_content = f"[Системная подсказка: пользователь выбрал окно '{context}'. Если будешь делать скриншот, используй этот заголовок в параметре window_title.]\n{user_input}"
+            
+        self.messages.append({"role": "user", "content": message_content})
         
         def log(msg):
             if output_callback:
