@@ -1,12 +1,12 @@
 import sys
 import os
+from PyQt6.QtWidgets import QApplication
+import desktop_app
 
 def main():
-    from PyQt6.QtWidgets import QApplication
     qapp = QApplication(sys.argv)
             
     # Launch the pet
-    import desktop_app
     pet = desktop_app.DesktopPet()
     pet.show()
     sys.exit(qapp.exec())
