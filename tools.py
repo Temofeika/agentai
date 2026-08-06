@@ -50,14 +50,31 @@ def write_file(path: str, content: str) -> str:
 def run_command(command: str) -> str:
     """Runs a shell command and returns the output."""
     try:
-        result = subprocess.run(command, shell=True, capture_output=True, text=True)
-        out = result.stdout
-        err = result.stderr
+        result = subprocess.run(command, shell=True, capture_output=True)
+        try:
+            out = result.stdout.decode('utf-8')
+            err = result.stderr.decode('utf-8')
+        except UnicodeDecodeError:
+            try:
+                out = result.stdout.decode('cp1251')
+                err = result.stderr.decode('cp1251')
+            except UnicodeDecodeError:
+                out = result.stdout.decode('cp866', errors='replace')
+                err = result.stderr.decode('cp866', errors='replace')
+                
         if result.returncode != 0:
             return f"Command failed with code {result.returncode}.\nSTDOUT: {out}\nSTDERR: {err}"
         return out if out else "Command executed successfully with no output."
     except Exception as e:
         return f"Error executing command: {e}"
+
+def open_file(path: str) -> str:
+    """Opens a file or URL with the default Windows application."""
+    try:
+        os.startfile(path)
+        return f"Successfully opened {path}"
+    except Exception as e:
+        return f"Error opening file: {e}"
 
 def get_window_bbox(window_title=None):
     if not window_title:
@@ -207,6 +224,20 @@ tools_schema = [
     {
         "type": "function",
         "function": {
+            "name": "open_file",
+            "description": "Opens a file (image, text, etc) using the default Windows application.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Path to the file to open."}
+                },
+                "required": ["path"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "capture_screen",
             "description": "Takes a screenshot of the user's current screen or a specific window and saves it.",
             "parameters": {
@@ -300,6 +331,8 @@ def execute_tool(name: str, arguments: dict) -> str:
         return write_file(arguments.get("path"), arguments.get("content"))
     elif name == "run_command":
         return run_command(arguments.get("command"))
+    elif name == "open_file":
+        return open_file(arguments.get("path"))
     elif name == "capture_screen":
         return capture_screen(arguments.get("save_path", "screenshot.png"), arguments.get("window_title"))
     elif name == "recognize_text_from_screen":
