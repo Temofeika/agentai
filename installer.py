@@ -7,7 +7,7 @@ from pathlib import Path
 from PyQt6.QtWidgets import QApplication, QDialog, QVBoxLayout, QLabel, QProgressBar
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 
-TESSERACT_URL = "https://github.com/UB-Mannheim/tesseract/releases/download/v5.3.3/tesseract-ocr-w64-setup-5.3.3.20231005.exe"
+TESSERACT_URL = "https://github.com/UB-Mannheim/tesseract/releases/download/v5.4.0.20240606/tesseract-ocr-w64-setup-5.4.0.20240606.exe"
 AGENT_EXE_NAME = "AI-Agent-v1.7.exe"
 TARGET_DIR_NAME = "AIPet"
 
