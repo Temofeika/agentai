@@ -104,11 +104,21 @@ def capture_screen(save_path: str = "screenshot.png", window_title: str = None) 
 def recognize_text_from_screen(window_title: str = None) -> str:
     """Takes a screenshot and runs OCR to extract text from the screen or specific window."""
     try:
+        from PIL import ImageEnhance, ImageOps, Image
         bbox = get_window_bbox(window_title)
         if bbox:
             img = pyautogui.screenshot(region=bbox)
         else:
             img = pyautogui.screenshot()
+            
+        # Preprocess the image to improve Tesseract accuracy
+        # 1. Scale up 2x
+        img = img.resize((img.width * 2, img.height * 2), Image.Resampling.LANCZOS)
+        # 2. Convert to Grayscale
+        img = ImageOps.grayscale(img)
+        # 3. Maximize contrast
+        enhancer = ImageEnhance.Contrast(img)
+        img = enhancer.enhance(2.0)
             
         text = pytesseract.image_to_string(img, lang='eng+rus')
         return f"Extracted text from screen:\n{text}"
@@ -150,16 +160,56 @@ def read_excel(excel_path: str) -> str:
         return f"Error reading Excel: {e}"
 
 def search_web(query: str) -> str:
-    """Searches the web using DuckDuckGo and returns the top 3 results."""
+    """Searches the web and returns top results. Uses Google News RSS for news, and DuckDuckGo Lite for general."""
+    import urllib.request, urllib.parse
+    
+    query_lower = query.lower()
+    
     try:
-        results = DDGS().text(query, max_results=3)
-        if not results:
-            return f"No results found for '{query}'."
-        
-        output = f"Top 3 Web Search Results for '{query}':\n\n"
-        for i, res in enumerate(results, 1):
-            output += f"{i}. {res.get('title')}\n{res.get('body')}\nURL: {res.get('href')}\n\n"
-        return output.strip()
+        if "новост" in query_lower or "news" in query_lower:
+            import xml.etree.ElementTree as ET
+            encoded_query = urllib.parse.quote(query)
+            url = f"https://news.google.com/rss/search?q={encoded_query}&hl=ru&gl=RU&ceid=RU:ru"
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            xml_data = urllib.request.urlopen(req).read()
+            root = ET.fromstring(xml_data)
+            items = root.findall('.//item')
+            
+            if not items:
+                return f"No news found for '{query}'."
+                
+            output = f"Главные новости по запросу '{query}':\n\n"
+            for i, item in enumerate(items[:5], 1):
+                title = item.find('title').text if item.find('title') is not None else 'No title'
+                pub_date = item.find('pubDate').text if item.find('pubDate') is not None else ''
+                output += f"{i}. {title} ({pub_date})\n"
+            return output.strip()
+            
+        else:
+            from bs4 import BeautifulSoup
+            data = urllib.parse.urlencode({'q': query}).encode('utf-8')
+            req = urllib.request.Request('https://lite.duckduckgo.com/lite/', data=data, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+            html = urllib.request.urlopen(req).read()
+            soup = BeautifulSoup(html, 'html.parser')
+            
+            rows = [tr.text.strip() for tr in soup.find_all('tr') if tr.text.strip()]
+            
+            output = f"Результаты поиска '{query}':\n\n"
+            count = 1
+            for row in rows:
+                if str(count) + "." in row[:5]:
+                    output += f"{row}\n"
+                    count += 1
+                elif count > 1 and len(row) > 10 and "duckduckgo" not in row:
+                    output += f"  {row}\n\n"
+                if count > 4:
+                    break
+            
+            if count == 1:
+                return f"No general results found for '{query}'."
+                
+            return output.strip()
+            
     except Exception as e:
         return f"Error searching the web: {e}"
 
