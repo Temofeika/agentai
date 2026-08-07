@@ -9,3 +9,5 @@ pdf2docx
 docx2pdf
 pandas
 openpyxl
+beautifulsoup4
+pywin32
