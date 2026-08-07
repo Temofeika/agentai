@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import QApplication, QDialog, QVBoxLayout, QLabel, QProgres
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 
 TESSERACT_URL = "https://github.com/UB-Mannheim/tesseract/releases/download/v5.4.0.20240606/tesseract-ocr-w64-setup-5.4.0.20240606.exe"
-AGENT_EXE_NAME = "AI-Agent-v1.7.exe"
+AGENT_EXE_NAME = "AI-Agent.exe"
 TARGET_DIR_NAME = "AIPet"
 
 class InstallerThread(QThread):
@@ -33,7 +33,11 @@ class InstallerThread(QThread):
 
             # 2. Install Tesseract
             self.progress_update.emit(50, "Установка Tesseract OCR (в фоновом режиме)...")
-            subprocess.run([str(tesseract_installer), "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART"], check=True)
+            try:
+                subprocess.run([str(tesseract_installer), "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART"], check=True)
+            except Exception as tess_e:
+                print(f"Failed to install tesseract: {tess_e}")
+                self.progress_update.emit(60, "Tesseract не установился, но Питомец продолжит установку...")
             
             # Clean up installer
             try:
